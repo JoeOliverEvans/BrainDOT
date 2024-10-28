@@ -180,7 +180,7 @@ for i=1:samples
     clean_images(:,:,:,i) = tmp./std(tmp(:));
 end
 
-mask0=zeros(102,89,88);
+mask0=zeros(32,80,64);
 mask0(mesh750.vol.gridinmesh)=1;
 mask=mask0(y_idx,x_idx,z_idx);
 
