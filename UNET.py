@@ -172,7 +172,7 @@ if __name__ == '__main__':
     validation_X = torch.tensor(data['noisy_images'][:, :, :, 1600:1900], dtype=torch.float32)
     validation_Y = torch.tensor(data['clean_images'][:, :, :, 1600:1900], dtype=torch.float32)
     # inmesh = np.int16(data['inmesh'].squeeze())d
-    mask = torch.ones(training_X[:,:,:,0].shape, dtype=torch.float32).to(device)
+    mask = torch.tensor(data['mask'], dtype=torch.float32).to(device)
 
     model = UNet().to(device)
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
