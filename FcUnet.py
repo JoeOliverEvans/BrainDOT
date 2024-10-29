@@ -22,11 +22,11 @@ class SparseLinear(nn.Module): # https://stackoverflow.com/questions/63893602/ne
 
 
 
-class UNet(nn.Module):
+class FcUNet(nn.Module):
     def __init__(self):
         super().__init__()
         # Fully connected layer to perform initial reconstruction
-        self.fc1 = nn.Linear(2688, 80*64*32)
+        self.fc1 = nn.Linear(1344, 80*64*32)
 
         # Encoder
         # input: 48*48*56*1
@@ -178,14 +178,19 @@ if __name__ == '__main__':
     print(data_string)
     data = mat73.loadmat(data_string)
     data2 = mat73.loadmat(r'Datasets/FirstModel/images_CCW1Mesh_spec4_2_nonan.mat')
-    training_X = torch.tensor(data['all_dOD_noisy'][:, :1600], dtype=torch.float32)
+    print(data['all_dOD_noisy'].shape)
+    print(data['all_dOD_noisy'][:1344, :1600].shape)
+    print(data['all_dOD_noisy'][1344:, :1600].shape)
+
+
+    training_X = torch.tensor(data['all_dOD_noisy'][:1344, :1600]/data['all_dOD_noisy'][1344:, :1600], dtype=torch.float32)
     training_Y = torch.tensor(data2['clean_images'][:, :, :, :1600], dtype=torch.float32)
-    validation_X = torch.tensor(data['all_dOD_noisy'][:, 1600:1900], dtype=torch.float32)
+    validation_X = torch.tensor(data['all_dOD_noisy'][:1344, 1600:1900]/data['all_dOD_noisy'][1344:, 1600:1900], dtype=torch.float32)
     validation_Y = torch.tensor(data2['clean_images'][:, :, :, 1600:1900], dtype=torch.float32)
     # inmesh = np.int16(data['inmesh'].squeeze())
     mask = torch.tensor(data2['mask'], dtype=torch.float32).to(device)
 
-    model = UNet().to(device)
+    model = FcUNet().to(device)
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     train_dataloader = DataLoader(mydata(training_X, training_Y, device), batch_size=16)
@@ -237,7 +242,7 @@ if __name__ == '__main__':
     # %%
     # Now process the test set
     model = torch.load(model_path)
-    test_X = torch.tensor(data['noisy_img'][:, :, :, 2400:], dtype=torch.float32)
+    test_X = torch.tensor(data['noisy_images'][:1344, 1900:]/data['noisy_images'][1344:, 1900:], dtype=torch.float32)
     test_Y = np.zeros(test_X.shape)
     for i in range(test_X.shape[-1]):
         tmp = test_X[:, :, :, i]
