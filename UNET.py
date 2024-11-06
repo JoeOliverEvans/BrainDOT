@@ -2,6 +2,7 @@ import numpy as np
 import scipy.io as sio
 import torch
 import torch.nn as nn
+from numpy import dtype
 from torchvision import models
 from torch.nn.functional import relu
 from torch.utils.data import Dataset
@@ -164,15 +165,16 @@ if __name__ == '__main__':
     print(f"Using {device} device")
 
     # data = sio.loadmat('../SimData/3D/images.mat')
-    data_string = r'Datasets/images_CCW1Mesh_spec4_2_nonan.mat'
+    data_string = r'Datasets/BiggerDatasetCropped/images_CCW1Mesh_spec4_2.mat'
     print(data_string)
     data = mat73.loadmat(data_string)
-    training_X = torch.tensor(data['noisy_images'][:, :, :, :1600], dtype=torch.float32)
-    training_Y = torch.tensor(data['clean_images'][:, :, :, :1600], dtype=torch.float32)
-    validation_X = torch.tensor(data['noisy_images'][:, :, :, 1600:1900], dtype=torch.float32)
-    validation_Y = torch.tensor(data['clean_images'][:, :, :, 1600:1900], dtype=torch.float32)
-    # inmesh = np.int16(data['inmesh'].squeeze())d
-    mask = torch.tensor(data['mask'], dtype=torch.float32).to(device)
+
+    training_X = torch.tensor(data['noisy_images'][:, :, :, :2500][:, 8:72, 12:52], dtype=torch.float32)
+    training_Y = torch.tensor(data['clean_images'][:, :, :, :2500][:, 8:72, 12:52], dtype=torch.float32)
+    validation_X = torch.tensor(data['noisy_images'][:, :, :, 2500:2900][:, 8:72, 12:52], dtype=torch.float32)
+    validation_Y = torch.tensor(data['clean_images'][:, :, :, 2500:2900][:, 8:72, 12:52], dtype=torch.float32)
+    # inmesh = np.int16(data['inmesh'].squeeze())
+    mask = torch.tensor(data['mask'][:, 8:72, 12:52], dtype=torch.float32).to(device)#torch.ones(training_X[:,:,:,1].shape, dtype=torch.float32).to(device)#torch.tensor(data['mask'], dtype=torch.float32).to(device)
 
     model = UNet().to(device)
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
@@ -229,10 +231,10 @@ if __name__ == '__main__':
     # %%
     # Now process the test set
     model = torch.load(model_path)
-    test_X = torch.tensor(data['noisy_images'][:, :, :, 1990:], dtype=torch.float32)
+    test_X = torch.tensor(data['noisy_images'][:, :, :, 2900:], dtype=torch.float32)
     test_Y = np.zeros(test_X.shape)
     for i in range(test_X.shape[-1]):
         tmp = test_X[:, :, :, i]
         test_Y[:, :, :, i] = model(tmp.unsqueeze(0).unsqueeze(0)).squeeze().detach().numpy()
 
-    sio.savemat(path_root_string + r'test_processed.mat', {'recon2': test_Y})
+    sio.savemat(path_root_string + r'test_processed.mat', {'recon2': test_Y, 'noisy_images' : np.array(test_X)})
