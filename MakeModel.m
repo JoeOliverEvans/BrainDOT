@@ -71,7 +71,7 @@ info2.pairs.WL = ones(length(link),1);
 info2.pairs.Mod = info2.pairs.Mod(1:length(link));
 
 info = info2;
-save('Pad_28x24Mod','info');
+save('Pads/Pad_28x24Mod','info');
 %% Create the mesh; copied form NeuroDOT example
 [mask,infoT1]=LoadVolumetricData(['Segmented_MNI152nl_on_MNI111'],[],'4dfp');
 % Parameters for generating your mesh
@@ -124,7 +124,7 @@ info.optodes.dpos3=tposNew((Ns+1):end,:);
 info.tissue.infoT1=infoT1;
 info.tissue.affine=eye(4);
 info.tissue.affine_target='MNI';
-save('Pad_28x24Mod_on_mesh.mat','info','tposNew'); % Pad file
+save('Pads/Pad_28x24Mod_on_mesh.mat','info','tposNew'); % Pad file
 
 %% Finish the mesh
 source = [];
@@ -166,7 +166,7 @@ mesh.mua(idx) = 0.0190;
 mesh.mus(idx) = 0.64;
 
 mesh.ri = 1.4*ones(size(mesh.ri));
-save_mesh('Example_Mesh', mesh);
+save_mesh('Meshes/Example_Mesh_850', mesh);
 % mesh = load_mesh('Example_Mesh');
 
 %% Make the 750nm model
@@ -191,5 +191,5 @@ idx = mesh.region==5;
 mesh.mua(idx) = 0.0170;
 mesh.mus(idx) = 0.74;
 
-save_mesh('Example_Mesh750', mesh);
+save_mesh('Meshes/Example_Mesh_750', mesh);
 
