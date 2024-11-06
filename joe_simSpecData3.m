@@ -12,7 +12,7 @@ mesh850 = load_mesh('JoeMeshCCW1/CCW1Mesh');
 % ygrid = -118:2:84;
 % zgrid = -74:2:100;
 xgrid = -79:2:79;
-ygrid = -111:2:-49;
+ygrid = -119:2:-57;
 zgrid = -58:2:68;
 mesh850 = gen_intmat(mesh850, xgrid, ygrid, zgrid);
 mesh750 = mesh850;
@@ -45,7 +45,7 @@ N_gray = sum(gray);
 N_nodes = size(mesh750.nodes,1);
 
 %% Important
-samples = 2000;
+samples = 3000;
 nchannel = size(mesh750.link, 1);
 % Random amplitude of dHbO, both positive and negative
 % dHbO should only be positive during activation, but since real data is
