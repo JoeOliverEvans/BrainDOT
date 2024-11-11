@@ -17,39 +17,53 @@ class UNet(nn.Module):
         super().__init__()
         # Encoder
         # input: 48*48*56*1
-        self.e11 = nn.Conv3d(1, 16, kernel_size=3, padding='same')
-        self.e12 = nn.Conv3d(16, 16, kernel_size=3, padding='same')
-        self.pool1 = nn.MaxPool3d(kernel_size=2, stride=2)
+        k_size = 5
+        k_pool_size = 2
+        activation_maps = 8
 
-        # input: 24*24*28*16
-        self.e21 = nn.Conv3d(16, 32, kernel_size=3, padding='same')
-        self.e22 = nn.Conv3d(32, 32, kernel_size=3, padding='same')
-        self.pool2 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.e11 = nn.Conv3d(1, activation_maps*1
+                             , kernel_size=k_size, padding='same')
+        self.e12 = nn.Conv3d(activation_maps*1
+                             , activation_maps*1
+                             , kernel_size=k_size, padding='same')
+        self.pool1 = nn.MaxPool3d(kernel_size=k_pool_size, stride=k_pool_size)
+
+        # input: 24*24*28*activation_maps*1
+
+        self.e21 = nn.Conv3d(activation_maps*1
+                             , activation_maps*2, kernel_size=k_size, padding='same')
+        self.e22 = nn.Conv3d(activation_maps*2, activation_maps*2, kernel_size=k_size, padding='same')
+        self.pool2 = nn.MaxPool3d(kernel_size=k_pool_size, stride=k_pool_size)
 
         # input: 12*12*14*32
-        self.e31 = nn.Conv3d(32, 64, kernel_size=3, padding='same')
-        self.e32 = nn.Conv3d(64, 64, kernel_size=3, padding='same')
-        self.pool3 = nn.MaxPool3d(kernel_size=2, stride=2)
+        self.e31 = nn.Conv3d(activation_maps*2, activation_maps*4, kernel_size=k_size, padding='same')
+        self.e32 = nn.Conv3d(activation_maps*4, activation_maps*4, kernel_size=k_size, padding='same')
+        self.pool3 = nn.MaxPool3d(kernel_size=k_pool_size, stride=k_pool_size)
 
         # input: 6*6*7*64
-        self.b1 = nn.Conv3d(64, 128, kernel_size=3, padding='same')
-        self.b2 = nn.Conv3d(128, 128, kernel_size=3, padding='same')
+        self.b1 = nn.Conv3d(activation_maps*4, activation_maps*8, kernel_size=k_size, padding='same')
+        self.b2 = nn.Conv3d(activation_maps*8, activation_maps*8, kernel_size=k_size, padding='same')
 
         # Decoder
-        self.upconv1 = nn.ConvTranspose3d(128, 64, kernel_size=2, stride=2)
-        self.d11 = nn.Conv3d(128, 64, kernel_size=3, padding='same')
-        self.d12 = nn.Conv3d(64, 64, kernel_size=3, padding='same')
+        self.upconv1 = nn.ConvTranspose3d(activation_maps*8, activation_maps*4, kernel_size=k_pool_size, stride=k_pool_size)
+        self.d11 = nn.Conv3d(activation_maps*8, activation_maps*4, kernel_size=k_size, padding='same')
+        self.d12 = nn.Conv3d(activation_maps*4, activation_maps*4, kernel_size=k_size, padding='same')
 
-        self.upconv2 = nn.ConvTranspose3d(64, 32, kernel_size=2, stride=2)
-        self.d21 = nn.Conv3d(64, 32, kernel_size=3, padding='same')
-        self.d22 = nn.Conv3d(32, 32, kernel_size=3, padding='same')
+        self.upconv2 = nn.ConvTranspose3d(activation_maps*4, activation_maps*2, kernel_size=k_pool_size, stride=k_pool_size)
+        self.d21 = nn.Conv3d(activation_maps*4, activation_maps*2, kernel_size=k_size, padding='same')
+        self.d22 = nn.Conv3d(activation_maps*2, activation_maps*2, kernel_size=k_size, padding='same')
 
-        self.upconv3 = nn.ConvTranspose3d(32, 16, kernel_size=2, stride=2)
-        self.d31 = nn.Conv3d(32, 16, kernel_size=3, padding='same')
-        self.d32 = nn.Conv3d(16, 16, kernel_size=3, padding='same')
+        self.upconv3 = nn.ConvTranspose3d(activation_maps*2, activation_maps*1
+                                          , kernel_size=k_pool_size, stride=k_pool_size)
+        self.d31 = nn.Conv3d(activation_maps*2, activation_maps*1
+                             , kernel_size=k_size, padding='same')
+        self.d32 = nn.Conv3d(activation_maps*1
+                             , activation_maps*1
+                             , kernel_size=k_size, padding='same')
 
         # Output layer
-        self.outconv = nn.Conv3d(16, 1, kernel_size=1)
+        self.outconv = nn.Conv3d(activation_maps*1
+                                 , 1, kernel_size=1)
 
     def forward(self, x):
         # Encoder
@@ -165,22 +179,24 @@ if __name__ == '__main__':
     print(f"Using {device} device")
 
     # data = sio.loadmat('../SimData/3D/images.mat')
-    data_string = r'Datasets/BiggerDatasetCropped/images_CCW1Mesh_spec4_2.mat'
+    data_string = r'Datasets/BiggerDatasetLargerKernel/images_CCW1Mesh_spec4_2.mat'
     print(data_string)
     data = mat73.loadmat(data_string)
 
-    training_X = torch.tensor(data['noisy_images'][:, :, :, :2500][:, 8:72, 12:52], dtype=torch.float32)
-    training_Y = torch.tensor(data['clean_images'][:, :, :, :2500][:, 8:72, 12:52], dtype=torch.float32)
-    validation_X = torch.tensor(data['noisy_images'][:, :, :, 2500:2900][:, 8:72, 12:52], dtype=torch.float32)
-    validation_Y = torch.tensor(data['clean_images'][:, :, :, 2500:2900][:, 8:72, 12:52], dtype=torch.float32)
-    # inmesh = np.int16(data['inmesh'].squeeze())
-    mask = torch.tensor(data['mask'][:, 8:72, 12:52], dtype=torch.float32).to(device)#torch.ones(training_X[:,:,:,1].shape, dtype=torch.float32).to(device)#torch.tensor(data['mask'], dtype=torch.float32).to(device)
+    training_X = torch.tensor(data['noisy_images'][:, :, :, :2500], dtype=torch.float32)
+    training_Y = torch.tensor(data['clean_images'][:, :, :, :2500], dtype=torch.float32)
+    validation_X = torch.tensor(data['noisy_images'][:, :, :, 2500:2900], dtype=torch.float32)
+    validation_Y = torch.tensor(data['clean_images'][:, :, :, 2500:2900], dtype=torch.float32)
+    # inmesh = np.intactivation_maps*1
+    # (data['inmesh'].squeeze())
+    mask = torch.tensor(data['mask'], dtype=torch.float32).to(device)#torch.ones(training_X[:,:,:,1].shape, dtype=torch.float32).to(device)#torch.tensor(data['mask'], dtype=torch.float32).to(device)
 
     model = UNet().to(device)
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    train_dataloader = DataLoader(mydata(training_X, training_Y, device), batch_size=16, shuffle=True)
+    train_dataloader = DataLoader(mydata(training_X, training_Y, device), batch_size=16
+                                  , shuffle=True)
     validate_dataloader = DataLoader(mydata(validation_X, validation_Y, device), batch_size=1)
 
     all_loss = []
