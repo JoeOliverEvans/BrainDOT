@@ -179,7 +179,7 @@ if __name__ == '__main__':
     print(f"Using {device} device")
 
     # data = sio.loadmat('../SimData/3D/images.mat')
-    data_string = r'Datasets/BiggerDatasetLargerKernel/images_CCW1Mesh_spec4_2.mat'
+    data_string = r'Datasets/FluctuationFixed/images_CCW1Mesh_spec4_2.mat'
     print(data_string)
     data = mat73.loadmat(data_string)
 
