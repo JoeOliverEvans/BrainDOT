@@ -20,6 +20,9 @@ J850 = jacobian_stnd_FD(mesh850,0,[],solver,opt);
 % Trick 1: find the voxels that are in the gray matter, AND the grid is
 % sensitive to
 gray=mesh850.region==3 & sum(J850.complete.^2)'>1e-4;
+gray_joe = mesh850.region==3;
+gray_coord_joe=mesh750.nodes(gray_joe,:);
+
 % 750nm mesh - change the optical properties of the 850nm mesh, or load the
 % previously saved mesh. Should make no difference
 region = mesh750.region;
@@ -34,8 +37,13 @@ mesh750.mus(region==4) = 0.94;
 mesh750.mus(region==5) = 0.74;
 % Don't forget to change kappa
 mesh750.kappa = 1./(3*(mesh750.mua + mesh750.mus));
-% J750 = jacobian_stnd_FD(mesh750);
 
+%%%
+J750 = jacobiangrid_stnd_FD(mesh750,[],[],[],0,solver,opt);
+J850 = jacobiangrid_stnd_FD(mesh850,[],[],[],0,solver,opt);
+
+
+%%%
 load E.mat % File containing extinction coefficients of HbO and Hb
 % [E_{750nm, HbO}, E_{750nm, Hb}]
 % [E_{850nm, HbO}, E_{850nm, Hb}]
@@ -45,23 +53,26 @@ N_gray = sum(gray);
 N_nodes = size(mesh750.nodes,1);
 
 %% Important
-samples = 3000;
+samples = 36;
 nchannel = size(mesh750.link, 1);
-% Random amplitude of dHbO, both positive and negative
-% dHbO should only be positive during activation, but since real data is
-% centered around its mean, the *processed* data will swing in both sides
-all_amplitude = (rand(samples, 2)*0.1+0.05) .* (((rand(samples, 2)>0.5)-0.5)*2);
+
+all_amplitude = [0.1 * ones(samples, 1), 0 * ones(samples, 1)];%(rand(samples, 2)*0.1+0.05) .* (((rand(samples, 2)>0.5)-0.5)*2);
+
+
 % These are the centers of the activation spot
 all_x = zeros(2, samples);
 all_y = zeros(2, samples);
 all_z = zeros(2, samples);
-% all_r = rand(samples,2)*10 + 10; % used in spec3
 % randomize the radius of the activation spot
-all_r = rand(samples,2)*10 + 5; % used in spec4
+
+
+all_r = 10 * ones(samples, 2);%rand(samples,2)*10 + 5; % used in spec4
+
+
 all_beta = zeros(N_nodes, samples);
 % proportion baseline mua and mus fluctuation
-all_fluctuate1 = 0.2*rand(5, samples) - 0.1;
-all_fluctuate2 = 0.2*rand(5, samples) - 0.1;
+all_fluctuate1 = zeros(5, samples);%0.2*rand(5, samples) - 0.1;
+all_fluctuate2 = zeros(5, samples);%0.2*rand(5, samples) - 0.1;
 all_dOD = zeros(nchannel, samples);
 % assume that dHb is a fraction of dHbO; usually around 3, here we
 % randomize between 1~4
@@ -69,16 +80,32 @@ all_ratio = rand(samples)*1.5 + 2.5;
 togrid = mesh750.vol.mesh2grid;
 for rep=1:samples
     fprintf('%d/%d\n', rep, samples);
-    while 1
-        % Trick: assume activation only happens in the gray matter and
-        % where the grid is sensitive to
-        % Simulate exactly two activations, and they are at least 40mm away
-        % from each other
-        centers = gray_coord(randperm(N_gray, 2), :);
-        if norm(centers(1,:) - centers(2,:))>40
-            break
+
+    % while 1
+    %     % Trick: assume activation only happens in the gray matter and
+    %     % where the grid is sensitive to
+    %     % Simulate exactly two activations, and they are at least 40mm away
+    %     % from each other
+    %     centers = gray_coord(randperm(N_gray, 2), :);
+    %     if norm(centers(1,:) - centers(2,:))>40
+    %         break
+    %     end
+    % end
+    circle_theta = 360 * [rep/samples, -rep/samples];
+    centers = [27.5 *cosd(circle_theta); [-95,-95]; 27.5 *sind(circle_theta) + 10]';
+    tol = 2;
+
+    % Find the corresponding point on the cortex
+    a = gray_coord_joe(squeeze(gray_coord_joe(:, 1)>centers(1,1)-tol & gray_coord_joe(:,1)<centers(1,1)+tol & gray_coord_joe(:,3)>centers(1,3)-tol & gray_coord_joe(:,3)<centers(1,3)+tol), 2);
+    sizea = size(a);
+    if sizea(1) ~= 0
+        if min(a) < -85
+            % changes the y value to the new value if it is truly in about
+            % the right spot
+            centers(2,1) = min(a);
         end
     end
+
     all_x(:,rep) = centers(:,1);
     all_y(:,rep) = centers(:,2);
     all_z(:,rep) = centers(:,3);
@@ -96,7 +123,7 @@ for rep=1:samples
     mesh750_2.mua(region==3) = mesh750.mua(region==3)*(1+all_fluctuate1(3,rep));
     mesh750_2.mua(region==4) = mesh750.mua(region==4)*(1+all_fluctuate1(4,rep));
     mesh750_2.mua(region==5) = mesh750.mua(region==5)*(1+all_fluctuate1(5,rep));
-    J750 = jacobiangrid_stnd_FD(mesh750_2,[],[],[],0,solver,opt);
+    %J750 = jacobiangrid_stnd_FD(mesh750,[],[],[],0,solver,opt);
 
     mesh850_2 = mesh850;
     mesh850_2.mua(region==1) = mesh850.mua(region==1)*(1+all_fluctuate2(1,rep));
@@ -104,7 +131,7 @@ for rep=1:samples
     mesh850_2.mua(region==3) = mesh850.mua(region==3)*(1+all_fluctuate2(3,rep));
     mesh850_2.mua(region==4) = mesh850.mua(region==4)*(1+all_fluctuate2(4,rep));
     mesh850_2.mua(region==5) = mesh850.mua(region==5)*(1+all_fluctuate2(5,rep));
-    J850 = jacobiangrid_stnd_FD(mesh850_2,[],[],[],0,solver,opt);
+    %J850 = jacobiangrid_stnd_FD(mesh850,[],[],[],0,solver,opt);
 
     % for each wavelength, dOD = J * dmua; dmua = E(hbo)*dHbO+E(Hb)*dHb
     % "beer-lambert law"
@@ -185,6 +212,6 @@ mask0(mesh750.vol.gridinmesh)=1;
 mask=mask0(y_idx,x_idx,z_idx);
 
 fprintf("Saving...\n")
-save('Datasets/images_CCW1Mesh_spec4_2.mat','clean_images','noisy_images','mask', '-v7.3');
-save('Datasets/Data_CCW1Mesh_spec4_2.mat', 'all_recon', 'all_beta', 'all_x', 'all_y', 'all_z', 'all_r', 'all_amplitude', 'all_dOD', 'all_dOD_noisy', 'all_noise','all_ratio','all_fluctuate2','all_fluctuate1', 'samples', '-v7.3');
+save('Datasets/images_rotating_nofluctuate.mat','clean_images','noisy_images','mask', '-v7.3');
+save('Datasets/data_rotating_nofluctuate.mat', 'all_recon', 'all_beta', 'all_x', 'all_y', 'all_z', 'all_r', 'all_amplitude', 'all_dOD', 'all_dOD_noisy', 'all_noise','all_ratio','all_fluctuate2','all_fluctuate1', 'samples', '-v7.3');
 
