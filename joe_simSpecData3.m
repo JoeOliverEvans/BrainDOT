@@ -60,8 +60,8 @@ all_z = zeros(2, samples);
 all_r = rand(samples,2)*10 + 5; % used in spec4
 all_beta = zeros(N_nodes, samples);
 % proportion baseline mua and mus fluctuation
-all_fluctuate1 = 0.2*rand(5, samples) - 0.1;
-all_fluctuate2 = 0.2*rand(5, samples) - 0.1;
+all_fluctuate1 = 0.2*rand(10, samples) - 0.1;
+all_fluctuate2 = 0.2*rand(10, samples) - 0.1;
 all_dOD = zeros(nchannel, samples);
 % assume that dHb is a fraction of dHbO; usually around 3, here we
 % randomize between 1~4
@@ -96,6 +96,12 @@ for rep=1:samples
     mesh750_2.mua(region==3) = mesh750.mua(region==3)*(1+all_fluctuate1(3,rep));
     mesh750_2.mua(region==4) = mesh750.mua(region==4)*(1+all_fluctuate1(4,rep));
     mesh750_2.mua(region==5) = mesh750.mua(region==5)*(1+all_fluctuate1(5,rep));
+    mesh750_2.mus(region==1) = mesh750.mus(region==1)*(1+all_fluctuate1(6,rep));
+    mesh750_2.mus(region==2) = mesh750.mus(region==2)*(1+all_fluctuate1(7,rep));
+    mesh750_2.mus(region==3) = mesh750.mus(region==3)*(1+all_fluctuate1(8,rep));
+    mesh750_2.mus(region==4) = mesh750.mus(region==4)*(1+all_fluctuate1(9,rep));
+    mesh750_2.mus(region==5) = mesh750.mus(region==5)*(1+all_fluctuate1(10,rep));
+    mesh750_2.kappa = 1./(3*(mesh750_2.mua + mesh750_2.mus));
     J750 = jacobiangrid_stnd_FD(mesh750_2,[],[],[],0,solver,opt);
 
     mesh850_2 = mesh850;
@@ -104,6 +110,12 @@ for rep=1:samples
     mesh850_2.mua(region==3) = mesh850.mua(region==3)*(1+all_fluctuate2(3,rep));
     mesh850_2.mua(region==4) = mesh850.mua(region==4)*(1+all_fluctuate2(4,rep));
     mesh850_2.mua(region==5) = mesh850.mua(region==5)*(1+all_fluctuate2(5,rep));
+    mesh850_2.mus(region==1) = mesh850.mus(region==1)*(1+all_fluctuate2(6,rep));
+    mesh850_2.mus(region==2) = mesh850.mus(region==2)*(1+all_fluctuate2(7,rep));
+    mesh850_2.mus(region==3) = mesh850.mus(region==3)*(1+all_fluctuate2(8,rep));
+    mesh850_2.mus(region==4) = mesh850.mus(region==4)*(1+all_fluctuate2(9,rep));
+    mesh850_2.mus(region==5) = mesh850.mus(region==5)*(1+all_fluctuate2(10,rep));
+    mesh850_2.kappa = 1./(3*(mesh850_2.mua + mesh850_2.mus));
     J850 = jacobiangrid_stnd_FD(mesh850_2,[],[],[],0,solver,opt);
 
     % for each wavelength, dOD = J * dmua; dmua = E(hbo)*dHbO+E(Hb)*dHb
