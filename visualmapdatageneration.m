@@ -47,7 +47,7 @@ N_gray = sum(gray);
 N_nodes = size(mesh750.nodes,1);
 
 %% Important
-samples = 10;
+samples = nnz(mask);
 nchannel = size(mesh750.link, 1);
 % Random amplitude of dHbO, both positive and negative
 % dHbO should only be positive during activation, but since real data is
@@ -86,8 +86,7 @@ J850 = jacobiangrid_stnd_FD(mesh850,[],[],[],0,solver,opt);
 
 
 for rep=1:samples
-    %fprintf('%d/%d\n', rep, samples);
-    disp(['text ',num2str(rep)]);
+    fprintf('%d/%d\n', rep, samples);
 
     % The dHbO vector in source space
     beta = zeros(N_nodes,1);
